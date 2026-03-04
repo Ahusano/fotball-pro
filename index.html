@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fotball Pro v8.2 - Cloud Ready</title>
+    <title>Fotball Pro v8.4 - Gullstandard</title>
     <style>
-        :root { 
-            --home-color: #ff0000; --away-color: #0000ff; 
-            --home-text: #ffffff; --away-text: #ffffff;
-        }
+        :root { --home-color: #ff0000; --away-color: #0000ff; --home-text: #ffffff; --away-text: #ffffff; }
         body { background-color: #121212; color: #e0e0e0; font-family: sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .card { width: 100%; max-width: 600px; background: #1e1e1e; padding: 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; text-align: center; box-sizing: border-box; }
         textarea { width: 100%; height: 80px; background: #333; color: white; border: 1px solid #555; border-radius: 5px; padding: 10px; margin-top: 10px; box-sizing: border-box; font-size: 1rem; }
@@ -29,10 +26,8 @@
         .share-btn { background: #28a745; color: white; padding: 5px 8px; font-size: 0.65rem; margin-top: 5px; border-radius: 4px; }
         .stats-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.8rem; }
         .stats-table th, .stats-table td { text-align: left; padding: 5px; border-bottom: 1px solid #333; }
-        #playerModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; padding-top: 15px; text-align: center; }
+        #playerModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; padding-top: 15px; text-align: center; }
         .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 20px; max-height: 80vh; overflow-y: auto; }
-        
-        /* Login Screen */
         #loginScreen { position: fixed; top:0; left:0; width:100%; height:100%; background:#121212; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2000; }
         #accessCode { padding:15px; font-size:1.5rem; width:200px; text-align:center; background:#222; border:1px solid #444; color:white; border-radius:8px; margin-bottom:15px; }
     </style>
@@ -113,7 +108,7 @@
         </div>
     </div>
 
-    <div id="playerModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:3000; padding-top:15px; text-align:center;">
+    <div id="playerModal">
         <h2 id="modalTitle"></h2><div id="playerGrid" class="player-grid"></div>
         <button onclick="closeModal()" style="background:#666; width:80%; padding:15px; border-radius:8px; color:white;">AVBRYT</button>
     </div>
@@ -122,14 +117,23 @@
         let seconds = 0, running = false, interval, scores = { home: 0, away: 0 }, history = [], rosters = { home: [], away: [] };
         let timerStartTimestamp = null, accumulatedSeconds = 0, currentHalf = 1, matchInProgress = false;
 
-        // KODE SJEKK (LOKAL SIKKERHET)
-        function checkAccess() {
-            const code = document.getElementById('accessCode').value;
-            if(code === '1234') { // HER ENDRER DU DIN KODE
+        // SMART LOGIN SJEKK (Husk meg i 12 timer)
+        window.onload = () => {
+            const lastAuth = localStorage.getItem('lastAuthTime');
+            const now = Date.now();
+            if (lastAuth && (now - lastAuth < 12 * 60 * 60 * 1000)) {
+                checkAccess(true); 
+            }
+        };
+
+        function checkAccess(bypass = false) {
+            // NY SIKKERHETSKODE: 1917
+            if(bypass || document.getElementById('accessCode').value === '1917') {
+                localStorage.setItem('lastAuthTime', Date.now());
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('appContent').style.display = 'flex';
                 initApp();
-            } else { alert("Feil kode! Kontakt administrator."); }
+            } else { alert("Feil kode!"); }
         }
 
         function initApp() {
@@ -144,8 +148,7 @@
         }
 
         function getContrastYIQ(hex){
-            hex = hex.replace("#", "");
-            if(hex.length === 3) hex = hex.split('').map(c => c+c).join('');
+            hex = hex.replace("#", ""); if(hex.length === 3) hex = hex.split('').map(c => c+c).join('');
             let r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
             return (((r*299)+(g*587)+(b*114))/1000 >= 128) ? 'black' : 'white';
         }
@@ -203,16 +206,13 @@
         }
 
         function updateDisplay() { let m = Math.floor(seconds / 60), s = seconds % 60; document.getElementById('timer').innerText = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
-
         function setHalfMode(h, s) { if(confirm("Bytte omgang?")) { currentHalf = h; seconds = s; accumulatedSeconds = s; if (running) timerStartTimestamp = Date.now(); updateDisplay(); saveState(); } }
-
         function getMatchTimeForLog() {
             let m = Math.floor(seconds / 60), s = seconds % 60;
             if (currentHalf === 1 && m >= 45) return "45+" + (m - 45) + ":" + (s < 10 ? '0' : '') + s;
             if (currentHalf === 2 && m >= 90) return "90+" + (m - 90) + ":" + (s < 10 ? '0' : '') + s;
             return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
         }
-
         function openPlayerSelect(type, team) {
             pendingEvent = { type, team };
             document.getElementById('modalTitle').innerText = (type === 'skudd' ? 'SKUDD PÅ MÅL' : type.toUpperCase()) + " (" + (team === 'home' ? 'H' : 'B') + ")";
@@ -220,7 +220,6 @@
             grid.innerHTML = (rosters[team].length > 0 ? rosters[team] : ["Ukjent"]).map(p => `<button style="background:#333; padding:18px; color:white; border-radius:8px;" onclick="confirmEvent('${p}')">${p}</button>`).join('') + `<button style="background:#444; padding:18px; color:white; border-radius:8px;" onclick="confirmEvent('Ukjent')">Ukjent</button>`;
             document.getElementById('playerModal').style.display = 'block';
         }
-
         function confirmEvent(p) {
             let type = pendingEvent.type, teamLabel = document.getElementById(pendingEvent.team + 'Name').value;
             if (type === 'mål') { scores[pendingEvent.team]++; document.getElementById(pendingEvent.team + 'Score').innerText = scores[pendingEvent.team]; }
@@ -229,67 +228,42 @@
             history.push({ type, displayType: dt, time: getMatchTimeForLog(), player: p, teamName: teamLabel, teamCode: pendingEvent.team });
             renderLog(); closeModal(); saveState();
         }
-
         function undoLastEvent() {
             if (history.length === 0 || !confirm("Angre siste?")) return;
             let last = history.pop(); if (last.type === 'mål') { scores[last.teamCode]--; document.getElementById(last.teamCode + 'Score').innerText = scores[last.teamCode]; }
             renderLog(); saveState();
         }
-
         function renderLog() { document.getElementById('eventLog').innerHTML = history.slice().reverse().map(e => `<div><strong>${e.time}</strong> ${e.displayType}: ${e.player} (${e.teamName})</div>`).join(''); }
         function closeModal() { document.getElementById('playerModal').style.display = 'none'; }
         function goToSetup() { document.getElementById('matchDisplay').style.display = 'none'; document.getElementById('setup').style.display = 'block'; }
-
         function finishAndSave() { 
             if (!confirm("Vil du avslutte og lagre kampen?")) return;
             const m = { id: Date.now(), date: new Date().toLocaleDateString(), type: document.getElementById('matchType').value, home: document.getElementById('homeName').value, away: document.getElementById('awayName').value, score: scores.home + "-" + scores.away, events: history, hColor: document.getElementById('homeColor').value, aColor: document.getElementById('awayColor').value };
             let db = JSON.parse(localStorage.getItem('fotballDB') || '[]'); db.push(m); localStorage.setItem('fotballDB', JSON.stringify(db));
             localStorage.removeItem('activeMatchState'); matchInProgress = false; location.reload(); 
         }
-
         function loadHistory() {
             let db = JSON.parse(localStorage.getItem('fotballDB') || '[]'); const list = document.getElementById('historyList'); if (db.length === 0) return;
-            list.innerHTML = db.slice().reverse().map((m, i) => `
-                <div class="match-entry">
-                    <strong>${m.date}</strong> - ${m.home} ${m.score} ${m.away}<br>
-                    <button class="export-btn" onclick="exportCSV(${db.length - 1 - i})">Excel</button>
-                    <button class="share-btn" onclick="shareMatchReport(${db.length - 1 - i})">Del Kampbilde</button>
-                </div>
-            `).join('');
+            list.innerHTML = db.slice().reverse().map((m, i) => `<div class="match-entry"><strong>${m.date}</strong> - ${m.home} ${m.score} ${m.away}<br><button class="export-btn" onclick="exportCSV(${db.length - 1 - i})">Excel</button><button class="share-btn" onclick="shareMatchReport(${db.length - 1 - i})">Del Kampbilde</button></div>`).join('');
             generateScorers(db);
         }
-
         function generateScorers(db) {
             let s = {}; db.forEach(m => { m.events.filter(e => e.type === 'mål').forEach(g => { s[g.player] = (s[g.player] || 0) + 1; }); });
             let sorted = Object.entries(s).sort((a, b) => b[1] - a[1]);
             const sec = document.getElementById('scorersSection'); if (sorted.length > 0) { sec.style.display = 'block'; document.getElementById('scorersList').innerHTML = `<table class="stats-table"><tr><th>Spiller</th><th>Mål</th></tr>${sorted.map(x => `<tr><td>${x[0]}</td><td><strong>${x[1]}</strong></td></tr>`).join('')}</table>`; }
         }
-
         function exportCSV(idx) {
             let db = JSON.parse(localStorage.getItem('fotballDB')); let m = db[idx]; 
             let csv = "\uFEFFTid;Hendelse;Spiller;Lag\n" + m.events.map(e => `${e.time};${e.displayType};${e.player};${e.teamName}`).join('\n');
             let b = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); let l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = `Kamp_${m.home}_${m.date}.csv`; l.click();
         }
-
         function shareMatchReport(idx) {
             let db = JSON.parse(localStorage.getItem('fotballDB')); let m = db[idx]; 
             let hc = getContrastYIQ(m.hColor), ac = getContrastYIQ(m.aColor), sc = m.events.filter(e => e.type === 'mål');
             let win = window.open('', '_blank');
-            win.document.write(`<html><body style="background:#222; color:#fff; font-family:sans-serif; text-align:center;">
-                <div style="background:#111; width:500px; margin:50px auto; padding:30px; border-radius:15px; box-shadow:0 10px 30px #000;">
-                    <p style="font-size:0.8rem; color:#888;">${m.date} | ${m.type}</p>
-                    <div style="display:flex; justify-content:space-around; align-items:center; margin:20px 0;">
-                        <div><div style="background:${m.hColor}; color:${hc}; padding:5px; border-radius:5px;">${m.home}</div><div style="font-size:80px; font-weight:bold;">${m.score.split('-')[0]}</div></div>
-                        <div style="font-size:50px; color:#444;">-</div>
-                        <div><div style="background:${m.aColor}; color:${ac}; padding:5px; border-radius:5px;">${m.away}</div><div style="font-size:80px; font-weight:bold;">${m.score.split('-')[1]}</div></div>
-                    </div>
-                    <div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; font-size:0.9rem;">
-                        <div style="display:flex;"><div style="flex:1;">${sc.filter(s=>s.teamCode==='home').map(s=>s.time+' '+s.player).join('<br>')||'Ingen mål'}</div><div style="flex:1; text-align:right;">${sc.filter(s=>s.teamCode==='away').map(s=>s.time+' '+s.player).join('<br>')||'Ingen mål'}</div></div>
-                    </div>
-                </div><p style="color:#888;">Ta et skjermbilde for å dele!</p></body></html>`);
+            win.document.write(`<html><body style="background:#222; color:#fff; font-family:sans-serif; text-align:center;"><div style="background:#111; width:500px; margin:50px auto; padding:30px; border-radius:15px; box-shadow:0 10px 30px #000;"><p style="font-size:0.8rem; color:#888;">${m.date} | ${m.type}</p><div style="display:flex; justify-content:space-around; align-items:center; margin:20px 0;"><div><div style="background:${m.hColor}; color:${hc}; padding:5px; border-radius:5px;">${m.home}</div><div style="font-size:80px; font-weight:bold;">${m.score.split('-')[0]}</div></div><div style="font-size:50px; color:#444;">-</div><div><div style="background:${m.aColor}; color:${ac}; padding:5px; border-radius:5px;">${m.away}</div><div style="font-size:80px; font-weight:bold;">${m.score.split('-')[1]}</div></div></div><div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; font-size:0.9rem;"><div style="display:flex;"><div style="flex:1;">${sc.filter(s=>s.teamCode==='home').map(s=>s.time+' '+s.player).join('<br>')||'Ingen mål'}</div><div style="flex:1; text-align:right;">${sc.filter(s=>s.teamCode==='away').map(s=>s.time+' '+s.player).join('<br>')||'Ingen mål'}</div></div></div></div><p style="color:#888;">Ta et skjermbilde for å dele!</p></body></html>`);
             win.document.close();
         }
-
         function clearDatabase() { if(confirm("Slette alt?")) { localStorage.removeItem('fotballDB'); location.reload(); } }
         function closeModal() { document.getElementById('playerModal').style.display = 'none'; }
     </script>
