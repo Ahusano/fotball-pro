@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fotball Pro v8.4 - Gullstandard</title>
+    <title>Fotball Pro v8.5 - Rødt Kort Lagt Til</title>
     <style>
         :root { --home-color: #ff0000; --away-color: #0000ff; --home-text: #ffffff; --away-text: #ffffff; }
         body { background-color: #121212; color: #e0e0e0; font-family: sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
@@ -90,6 +90,8 @@
                 <button class="btn-away-stat" onclick="openPlayerSelect('mål', 'away')">MÅL (B)</button>
                 <button class="btn-home-stat" onclick="openPlayerSelect('gult', 'home')">GULT (H)</button>
                 <button class="btn-away-stat" onclick="openPlayerSelect('gult', 'away')">GULT (B)</button>
+                <button class="btn-home-stat" onclick="openPlayerSelect('rødt', 'home')">RØDT (H)</button>
+                <button class="btn-away-stat" onclick="openPlayerSelect('rødt', 'away')">RØDT (B)</button>
                 <button class="btn-home-stat" onclick="openPlayerSelect('corner', 'home')">CORNER (H)</button>
                 <button class="btn-away-stat" onclick="openPlayerSelect('corner', 'away')">CORNER (B)</button>
                 <button class="btn-home-stat" onclick="openPlayerSelect('skudd', 'home')">SKUDD (H)</button>
@@ -97,7 +99,7 @@
                 <button class="btn-home-stat" onclick="openPlayerSelect('redning', 'home')">REDNING (H)</button>
                 <button class="btn-away-stat" onclick="openPlayerSelect('redning', 'away')">REDNING (B)</button>
                 <button class="btn-home-stat" onclick="openPlayerSelect('offside', 'home')">OFFSIDE (H)</button>
-                <button class="btn-away-stat" onclick="openPlayerSelect('offside', 'away')">OFFSIDE (B)</button>
+                <button class="btn-away-stat" onclick="openPlayerSelect('offside', 'B')">OFFSIDE (B)</button>
                 <button class="btn-home-stat" onclick="openPlayerSelect('innbytte', 'home')">INNBYTTE (H)</button>
                 <button class="btn-away-stat" onclick="openPlayerSelect('innbytte', 'away')">INNBYTTE (B)</button>
                 <button class="btn-undo" onclick="undoLastEvent()">↩ ANGRE SISTE</button>
@@ -122,7 +124,7 @@
             const lastAuth = localStorage.getItem('lastAuthTime');
             const now = Date.now();
             if (lastAuth && (now - lastAuth < 12 * 60 * 60 * 1000)) {
-                checkAccess(true); 
+                checkAccess(true); // Bypass
             }
         };
 
