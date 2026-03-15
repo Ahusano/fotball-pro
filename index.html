@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fotball Pro v8.5 - Rødt Kort Lagt Til</title>
+    <title>Fotball Pro v8.8 - Komplett med Kampvalg</title>
     <style>
         :root { --home-color: #ff0000; --away-color: #0000ff; --home-text: #ffffff; --away-text: #ffffff; }
         body { background-color: #121212; color: #e0e0e0; font-family: sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
@@ -16,9 +16,9 @@
         .controls { width: 100%; max-width: 600px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         button { border: none; padding: 12px 5px; font-size: 0.85rem; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-start { background-color: #1a4d1a; color: white; grid-column: span 2; font-size: 1.4rem; padding: 18px; margin-bottom: 5px; }
-        .btn-home-stat { background-color: var(--home-color); color: var(--home-text); border-bottom: 3px solid rgba(0,0,0,0.2); }
-        .btn-away-stat { background-color: var(--away-color); color: var(--away-text); border-bottom: 3px solid rgba(0,0,0,0.2); }
-        .btn-undo { background-color: #666; color: white; grid-column: span 2; padding: 10px; font-size: 0.85rem; border: 1px solid #888; }
+        .btn-main-event { font-size: 1.1rem; padding: 25px 10px; }
+        .btn-home { background-color: var(--home-color); color: var(--home-text); }
+        .btn-away { background-color: var(--away-color); color: var(--away-text); }
         .btn-danger { background-color: #d9534f; color: white; grid-column: span 2; margin-top: 10px; padding: 15px; }
         #eventLog, #historyList { width: 100%; max-width: 600px; text-align: left; max-height: 200px; overflow-y: auto; font-size: 0.85rem; background: #111; padding: 12px; border-radius: 10px; border: 1px solid #333; box-sizing: border-box; }
         .match-entry { border-bottom: 1px solid #333; padding: 10px 0; font-size: 0.8rem;}
@@ -26,8 +26,8 @@
         .share-btn { background: #28a745; color: white; padding: 5px 8px; font-size: 0.65rem; margin-top: 5px; border-radius: 4px; }
         .stats-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.8rem; }
         .stats-table th, .stats-table td { text-align: left; padding: 5px; border-bottom: 1px solid #333; }
-        #playerModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; padding-top: 15px; text-align: center; }
-        .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 20px; max-height: 80vh; overflow-y: auto; }
+        #playerModal, #eventMenuModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; padding-top: 15px; text-align: center; }
+        .grid-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 20px; max-height: 80vh; overflow-y: auto; }
         #loginScreen { position: fixed; top:0; left:0; width:100%; height:100%; background:#121212; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2000; }
         #accessCode { padding:15px; font-size:1.5rem; width:200px; text-align:center; background:#222; border:1px solid #444; color:white; border-radius:8px; margin-bottom:15px; }
     </style>
@@ -36,7 +36,6 @@
 
     <div id="loginScreen">
         <h2 style="color:#28a745;">⚽ Fotball Pro Access</h2>
-        <p>Tast inn Team-kode for å starte:</p>
         <input type="password" id="accessCode" placeholder="****">
         <button class="btn-start" onclick="checkAccess()" style="width:200px;">LÅS OPP</button>
     </div>
@@ -49,6 +48,7 @@
                 <option value="Treningskamp">⚽ Treningskamp</option>
                 <option value="Turnering">🏅 Turnering</option>
             </select>
+            
             <div style="display:flex; gap:10px; margin-bottom:10px;">
                 <input type="text" id="homeName" value="Hjemme" style="flex:3; padding:12px; background:#222; color:white; border:1px solid #444;">
                 <input type="color" id="homeColor" value="#ff0000" onchange="updateColors()" style="flex:1; height:45px;">
@@ -67,10 +67,11 @@
                 <input type="file" accept=".txt" style="display:none" onchange="importFile(this, 'awayPlayers')">
             </label>
             <button class="btn-start" onclick="startMatch()" style="margin-top:20px; width:100%;">BEKREFT & START KAMP</button>
+            
             <div id="archiveSection" style="margin-top:30px; border-top:2px solid #333; padding-top:15px; text-align:left;">
                 <h4>📁 Sesongarkiv</h4>
                 <div id="scorersSection" style="display:none; margin-bottom: 20px;"><h5 style="color:#aaa;">🥇 Toppscorer</h5><div id="scorersList"></div></div>
-                <div id="historyList">Ingen lagrede kamper ennå.</div>
+                <div id="historyList">Ingen lagrede kamper.</div>
                 <button onclick="clearDatabase()" style="background:#555; width:100%; color:white; border-radius:4px; margin-top:10px; font-size:0.7rem; padding:5px; border:none;">TØM ALL HISTORIKK</button>
             </div>
         </div>
@@ -84,25 +85,11 @@
             </div>
             <div class="controls">
                 <button id="startBtn" class="btn-start" onclick="toggleTimer()">START KLOKKE</button>
+                <button class="btn-main-event btn-home" onclick="openEventMenu('home')">NY HENDELSE (H)</button>
+                <button class="btn-main-event btn-away" onclick="openEventMenu('away')">NY HENDELSE (B)</button>
                 <button style="background:#444; color:white;" onclick="setHalfMode(1, 0)">1. OMG</button>
                 <button style="background:#444; color:white;" onclick="setHalfMode(2, 2700)">2. OMG</button>
-                <button class="btn-home-stat" onclick="openPlayerSelect('mål', 'home')">MÅL (H)</button>
-                <button class="btn-away-stat" onclick="openPlayerSelect('mål', 'away')">MÅL (B)</button>
-                <button class="btn-home-stat" onclick="openPlayerSelect('gult', 'home')">GULT (H)</button>
-                <button class="btn-away-stat" onclick="openPlayerSelect('gult', 'away')">GULT (B)</button>
-                <button class="btn-home-stat" onclick="openPlayerSelect('rødt', 'home')">RØDT (H)</button>
-                <button class="btn-away-stat" onclick="openPlayerSelect('rødt', 'away')">RØDT (B)</button>
-                <button class="btn-home-stat" onclick="openPlayerSelect('corner', 'home')">CORNER (H)</button>
-                <button class="btn-away-stat" onclick="openPlayerSelect('corner', 'away')">CORNER (B)</button>
-                <button class="btn-home-stat" onclick="openPlayerSelect('skudd', 'home')">SKUDD (H)</button>
-                <button class="btn-away-stat" onclick="openPlayerSelect('skudd', 'away')">SKUDD (B)</button>
-                <button class="btn-home-stat" onclick="openPlayerSelect('redning', 'home')">REDNING (H)</button>
-                <button class="btn-away-stat" onclick="openPlayerSelect('redning', 'away')">REDNING (B)</button>
-                <button class="btn-home-stat" onclick="openPlayerSelect('offside', 'home')">OFFSIDE (H)</button>
-                <button class="btn-away-stat" onclick="openPlayerSelect('offside', 'B')">OFFSIDE (B)</button>
-                <button class="btn-home-stat" onclick="openPlayerSelect('innbytte', 'home')">INNBYTTE (H)</button>
-                <button class="btn-away-stat" onclick="openPlayerSelect('innbytte', 'away')">INNBYTTE (B)</button>
-                <button class="btn-undo" onclick="undoLastEvent()">↩ ANGRE SISTE</button>
+                <button style="background:#666; color:white; grid-column: span 2;" onclick="undoLastEvent()">↩ ANGRE SISTE HANDLING</button>
                 <button style="background:#5d4037; color:white; grid-column: span 2;" onclick="goToSetup()">🏠 REDIGER LAG / SPILLERE</button>
                 <button class="btn-danger" onclick="finishAndSave()">AVSLUTT & LAGRE KAMP</button>
             </div>
@@ -110,26 +97,46 @@
         </div>
     </div>
 
+    <div id="eventMenuModal">
+        <h2 id="eventMenuTitle">VELG HENDELSE</h2>
+        <div class="grid-menu">
+            <button style="background:#cc0000; color:white; padding:20px;" onclick="selectEventType('mål')">⚽ MÅL</button>
+            <button style="background:#e6b800; color:black; padding:20px;" onclick="selectEventType('gult')">🟨 GULT KORT</button>
+            <button style="background:#b30000; color:white; padding:20px;" onclick="selectEventType('rødt')">🟥 RØDT KORT</button>
+            <button style="background:#444; color:white; padding:20px;" onclick="selectEventType('frispark')">🎯 FRISPARK</button>
+            <button style="background:#444; color:white; padding:20px;" onclick="selectEventType('corner')">🚩 CORNER</button>
+            <button style="background:#444; color:white; padding:20px;" onclick="selectEventType('skudd')">👟 SKUDD PÅ MÅL</button>
+            <button style="background:#444; color:white; padding:20px;" onclick="selectEventType('redning')">👐 REDNING</button>
+            <button style="background:#444; color:white; padding:20px;" onclick="selectEventType('offside')">🚫 OFFSIDE</button>
+            <button style="background:#444; color:white; padding:20px;" onclick="selectEventType('innbytte')">🔄 INNBYTTE</button>
+            <button style="background:#222; color:white; border:1px solid #555; padding:20px;" onclick="selectEventType('annet')">📝 ANNET</button>
+        </div>
+        <button onclick="closeEventMenu()" style="background:#666; width:80%; padding:15px; color:white; margin-top:10px;">AVBRYT</button>
+    </div>
+
     <div id="playerModal">
-        <h2 id="modalTitle"></h2><div id="playerGrid" class="player-grid"></div>
-        <button onclick="closeModal()" style="background:#666; width:80%; padding:15px; border-radius:8px; color:white;">AVBRYT</button>
+        <h2 id="modalTitle">VELG SPILLER</h2>
+        <div id="playerGrid" class="grid-menu"></div>
+        <button onclick="closePlayerModal()" style="background:#666; width:80%; padding:15px; color:white;">TILBAKE</button>
     </div>
 
     <script>
         let seconds = 0, running = false, interval, scores = { home: 0, away: 0 }, history = [], rosters = { home: [], away: [] };
         let timerStartTimestamp = null, accumulatedSeconds = 0, currentHalf = 1, matchInProgress = false;
+        let pendingEvent = { type: '', team: '', customNote: '' };
 
-        // SMART LOGIN SJEKK (Husk meg i 12 timer)
+        function getContrastYIQ(hex){
+            hex = hex.replace("#", ""); if(hex.length === 3) hex = hex.split('').map(c => c+c).join('');
+            let r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+            return (((r*299)+(g*587)+(b*114))/1000 >= 128) ? 'black' : 'white';
+        }
+
         window.onload = () => {
             const lastAuth = localStorage.getItem('lastAuthTime');
-            const now = Date.now();
-            if (lastAuth && (now - lastAuth < 12 * 60 * 60 * 1000)) {
-                checkAccess(true); // Bypass
-            }
+            if (lastAuth && (Date.now() - lastAuth < 12 * 60 * 60 * 1000)) checkAccess(true);
         };
 
         function checkAccess(bypass = false) {
-            // NY SIKKERHETSKODE: 1917
             if(bypass || document.getElementById('accessCode').value === '1917') {
                 localStorage.setItem('lastAuthTime', Date.now());
                 document.getElementById('loginScreen').style.display = 'none';
@@ -149,48 +156,23 @@
             updateColors(); loadHistory();
         }
 
-        function getContrastYIQ(hex){
-            hex = hex.replace("#", ""); if(hex.length === 3) hex = hex.split('').map(c => c+c).join('');
-            let r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
-            return (((r*299)+(g*587)+(b*114))/1000 >= 128) ? 'black' : 'white';
-        }
-
-        function updateColors() {
-            const h = document.getElementById('homeColor').value, a = document.getElementById('awayColor').value;
-            document.documentElement.style.setProperty('--home-color', h); document.documentElement.style.setProperty('--away-color', a);
-            document.documentElement.style.setProperty('--home-text', getContrastYIQ(h)); document.documentElement.style.setProperty('--away-text', getContrastYIQ(a));
-        }
-
         function importFile(i, t) {
             const f = i.files[0]; if (f) { const r = new FileReader(); r.onload = (e) => { document.getElementById(t).value = e.target.result; saveState(); }; r.readAsText(f); }
         }
 
-        function saveState() {
-            if (!matchInProgress) return;
-            try {
-                const s = { seconds, running, accumulatedSeconds, timerStartTimestamp, scores, history, rosters, currentHalf, matchInProgress,
-                    homeName: document.getElementById('homeName').value, awayName: document.getElementById('awayName').value,
-                    homeColor: document.getElementById('homeColor').value, awayColor: document.getElementById('awayColor').value,
-                    matchType: document.getElementById('matchType').value, homePlayersRaw: document.getElementById('homePlayers').value, awayPlayersRaw: document.getElementById('awayPlayers').value };
-                localStorage.setItem('activeMatchState', JSON.stringify(s));
-            } catch (e) {}
-        }
+        function openEventMenu(team) { pendingEvent.team = team; document.getElementById('eventMenuTitle').innerText = "HENDELSE: " + (team === 'home' ? 'HJEMME' : 'BORTE'); document.getElementById('eventMenuModal').style.display = 'block'; }
+        function closeEventMenu() { document.getElementById('eventMenuModal').style.display = 'none'; }
+        function selectEventType(type) { pendingEvent.type = type; pendingEvent.customNote = ''; if (type === 'annet') { pendingEvent.customNote = prompt("Beskriv hendelsen:"); if (!pendingEvent.customNote) return; } document.getElementById('eventMenuModal').style.display = 'none'; openPlayerSelect(); }
+        function openPlayerSelect() { const team = pendingEvent.team; const grid = document.getElementById('playerGrid'); grid.innerHTML = (rosters[team].length > 0 ? rosters[team] : ["Ukjent"]).map(p => `<button style="background:#333; padding:18px; color:white;" onclick="confirmEvent('${p}')">${p}</button>`).join('') + `<button style="background:#444; padding:18px; color:white;" onclick="confirmEvent('Ukjent')">Ukjent</button>`; document.getElementById('playerModal').style.display = 'block'; }
+        function closePlayerModal() { document.getElementById('playerModal').style.display = 'none'; }
 
-        function restoreState(s) {
-            scores = s.scores || {home:0, away:0}; history = s.history || []; rosters = s.rosters || {home:[], away:[]};
-            document.getElementById('homeScore').innerText = scores.home; document.getElementById('awayScore').innerText = scores.away;
-            accumulatedSeconds = s.accumulatedSeconds || 0;
-            if (s.running && s.timerStartTimestamp) {
-                seconds = accumulatedSeconds + Math.floor((Date.now() - s.timerStartTimestamp) / 1000);
-                timerStartTimestamp = s.timerStartTimestamp; running = true;
-                interval = setInterval(() => { seconds = accumulatedSeconds + Math.floor((Date.now() - timerStartTimestamp) / 1000); updateDisplay(); }, 1000);
-                document.getElementById('startBtn').innerText = "PAUSE";
-            } else { seconds = s.seconds || 0; running = false; document.getElementById('startBtn').innerText = "FORTSETT"; }
-            document.getElementById('homeName').value = s.homeName; document.getElementById('awayName').value = s.awayName;
-            document.getElementById('homeColor').value = s.homeColor; document.getElementById('awayColor').value = s.awayColor;
-            document.getElementById('matchType').value = s.matchType;
-            document.getElementById('homePlayers').value = s.homePlayersRaw || ""; document.getElementById('awayPlayers').value = s.awayPlayersRaw || "";
-            startMatch(true); renderLog(); updateDisplay();
+        function confirmEvent(playerName) {
+            const { type, team, customNote } = pendingEvent; const teamLabel = document.getElementById(team + 'Name').value;
+            if (type === 'mål') { scores[team]++; document.getElementById(team + 'Score').innerText = scores[team]; }
+            let dt = type.toUpperCase(); if (type === 'annet') dt = customNote.toUpperCase();
+            if (type === 'gult' && history.filter(e => e.player === playerName && e.type === 'gult' && e.teamCode === team).length >= 1) dt = '2. GULT (RØDT)';
+            history.push({ type, displayType: dt, time: getMatchTimeForLog(), player: playerName, teamName: teamLabel, teamCode: team });
+            renderLog(); closePlayerModal(); saveState();
         }
 
         function startMatch(restored = false) {
@@ -202,72 +184,56 @@
         }
 
         function toggleTimer() {
-            if (running) { if (!confirm("Vil du virkelig sette klokka på pause?")) return; running = false; accumulatedSeconds = seconds; clearInterval(interval); }
+            if (running) { if (!confirm("Pause?")) return; running = false; accumulatedSeconds = seconds; clearInterval(interval); }
             else { running = true; timerStartTimestamp = Date.now(); interval = setInterval(() => { seconds = accumulatedSeconds + Math.floor((Date.now() - timerStartTimestamp) / 1000); updateDisplay(); }, 1000); }
             document.getElementById('startBtn').innerText = running ? "PAUSE" : "FORTSETT"; saveState();
         }
 
         function updateDisplay() { let m = Math.floor(seconds / 60), s = seconds % 60; document.getElementById('timer').innerText = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
         function setHalfMode(h, s) { if(confirm("Bytte omgang?")) { currentHalf = h; seconds = s; accumulatedSeconds = s; if (running) timerStartTimestamp = Date.now(); updateDisplay(); saveState(); } }
-        function getMatchTimeForLog() {
-            let m = Math.floor(seconds / 60), s = seconds % 60;
-            if (currentHalf === 1 && m >= 45) return "45+" + (m - 45) + ":" + (s < 10 ? '0' : '') + s;
-            if (currentHalf === 2 && m >= 90) return "90+" + (m - 90) + ":" + (s < 10 ? '0' : '') + s;
-            return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
-        }
-        function openPlayerSelect(type, team) {
-            pendingEvent = { type, team };
-            document.getElementById('modalTitle').innerText = (type === 'skudd' ? 'SKUDD PÅ MÅL' : type.toUpperCase()) + " (" + (team === 'home' ? 'H' : 'B') + ")";
-            const grid = document.getElementById('playerGrid');
-            grid.innerHTML = (rosters[team].length > 0 ? rosters[team] : ["Ukjent"]).map(p => `<button style="background:#333; padding:18px; color:white; border-radius:8px;" onclick="confirmEvent('${p}')">${p}</button>`).join('') + `<button style="background:#444; padding:18px; color:white; border-radius:8px;" onclick="confirmEvent('Ukjent')">Ukjent</button>`;
-            document.getElementById('playerModal').style.display = 'block';
-        }
-        function confirmEvent(p) {
-            let type = pendingEvent.type, teamLabel = document.getElementById(pendingEvent.team + 'Name').value;
-            if (type === 'mål') { scores[pendingEvent.team]++; document.getElementById(pendingEvent.team + 'Score').innerText = scores[pendingEvent.team]; }
-            let dt = type.toUpperCase(); if (type === 'skudd') dt = 'SKUDD PÅ MÅL';
-            if (type === 'gult' && history.filter(e => e.player === p && e.type === 'gult' && e.teamCode === pendingEvent.team).length >= 1) dt = '2. GULT (RØDT)';
-            history.push({ type, displayType: dt, time: getMatchTimeForLog(), player: p, teamName: teamLabel, teamCode: pendingEvent.team });
-            renderLog(); closeModal(); saveState();
-        }
-        function undoLastEvent() {
-            if (history.length === 0 || !confirm("Angre siste?")) return;
-            let last = history.pop(); if (last.type === 'mål') { scores[last.teamCode]--; document.getElementById(last.teamCode + 'Score').innerText = scores[last.teamCode]; }
-            renderLog(); saveState();
-        }
+        function getMatchTimeForLog() { let m = Math.floor(seconds / 60), s = seconds % 60; if (currentHalf === 1 && m >= 45) return "45+" + (m - 45) + ":" + (s < 10 ? '0' : '') + s; if (currentHalf === 2 && m >= 90) return "90+" + (m - 90) + ":" + (s < 10 ? '0' : '') + s; return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
+        function updateColors() { const h = document.getElementById('homeColor').value, a = document.getElementById('awayColor').value; document.documentElement.style.setProperty('--home-color', h); document.documentElement.style.setProperty('--away-color', a); document.documentElement.style.setProperty('--home-text', getContrastYIQ(h)); document.documentElement.style.setProperty('--away-text', getContrastYIQ(a)); }
         function renderLog() { document.getElementById('eventLog').innerHTML = history.slice().reverse().map(e => `<div><strong>${e.time}</strong> ${e.displayType}: ${e.player} (${e.teamName})</div>`).join(''); }
-        function closeModal() { document.getElementById('playerModal').style.display = 'none'; }
-        function goToSetup() { document.getElementById('matchDisplay').style.display = 'none'; document.getElementById('setup').style.display = 'block'; }
-        function finishAndSave() { 
-            if (!confirm("Vil du avslutte og lagre kampen?")) return;
-            const m = { id: Date.now(), date: new Date().toLocaleDateString(), type: document.getElementById('matchType').value, home: document.getElementById('homeName').value, away: document.getElementById('awayName').value, score: scores.home + "-" + scores.away, events: history, hColor: document.getElementById('homeColor').value, aColor: document.getElementById('awayColor').value };
-            let db = JSON.parse(localStorage.getItem('fotballDB') || '[]'); db.push(m); localStorage.setItem('fotballDB', JSON.stringify(db));
-            localStorage.removeItem('activeMatchState'); matchInProgress = false; location.reload(); 
+        function saveState() { if (matchInProgress) localStorage.setItem('activeMatchState', JSON.stringify({ seconds, running, accumulatedSeconds, timerStartTimestamp, scores, history, rosters, currentHalf, matchInProgress, homeName: document.getElementById('homeName').value, awayName: document.getElementById('awayName').value, homeColor: document.getElementById('homeColor').value, awayColor: document.getElementById('awayColor').value, homePlayersRaw: document.getElementById('homePlayers').value, awayPlayersRaw: document.getElementById('awayPlayers').value, matchType: document.getElementById('matchType').value })); }
+        
+        function restoreState(s) { 
+            scores = s.scores; history = s.history; rosters = s.rosters; currentHalf = s.currentHalf; matchInProgress = true;
+            document.getElementById('homeScore').innerText = scores.home; document.getElementById('awayScore').innerText = scores.away;
+            document.getElementById('homeName').value = s.homeName; document.getElementById('awayName').value = s.awayName;
+            document.getElementById('homeColor').value = s.homeColor; document.getElementById('awayColor').value = s.awayColor;
+            document.getElementById('homePlayers').value = s.homePlayersRaw || ""; document.getElementById('awayPlayers').value = s.awayPlayersRaw || "";
+            if (document.getElementById('matchType')) document.getElementById('matchType').value = s.matchType || "Sesong";
+            if (s.running) { accumulatedSeconds = s.accumulatedSeconds; timerStartTimestamp = s.timerStartTimestamp; running = true; seconds = accumulatedSeconds + Math.floor((Date.now() - timerStartTimestamp) / 1000); interval = setInterval(() => { seconds = accumulatedSeconds + Math.floor((Date.now() - timerStartTimestamp) / 1000); updateDisplay(); }, 1000); document.getElementById('startBtn').innerText = "PAUSE"; } else { seconds = s.seconds; updateDisplay(); }
+            startMatch(true); renderLog();
         }
+
+        function finishAndSave() { if (confirm("Lagre kamp?")) { let db = JSON.parse(localStorage.getItem('fotballDB') || '[]'); db.push({ date: new Date().toLocaleDateString(), type: document.getElementById('matchType').value, home: document.getElementById('homeName').value, away: document.getElementById('awayName').value, score: scores.home + "-" + scores.away, events: history, hColor: document.getElementById('homeColor').value, aColor: document.getElementById('awayColor').value }); localStorage.setItem('fotballDB', JSON.stringify(db)); localStorage.removeItem('activeMatchState'); location.reload(); } }
+        
         function loadHistory() {
             let db = JSON.parse(localStorage.getItem('fotballDB') || '[]'); const list = document.getElementById('historyList'); if (db.length === 0) return;
-            list.innerHTML = db.slice().reverse().map((m, i) => `<div class="match-entry"><strong>${m.date}</strong> - ${m.home} ${m.score} ${m.away}<br><button class="export-btn" onclick="exportCSV(${db.length - 1 - i})">Excel</button><button class="share-btn" onclick="shareMatchReport(${db.length - 1 - i})">Del Kampbilde</button></div>`).join('');
+            list.innerHTML = db.slice().reverse().map((m, i) => `<div class="match-entry"><strong>${m.date}</strong> - ${m.home} ${m.score} ${m.away} (${m.type})<br><button class="export-btn" onclick="exportCSV(${db.length - 1 - i})">Excel</button><button class="share-btn" onclick="shareMatchReport(${db.length - 1 - i})">Del Kampbilde</button></div>`).join('');
             generateScorers(db);
         }
+
         function generateScorers(db) {
             let s = {}; db.forEach(m => { m.events.filter(e => e.type === 'mål').forEach(g => { s[g.player] = (s[g.player] || 0) + 1; }); });
             let sorted = Object.entries(s).sort((a, b) => b[1] - a[1]);
             const sec = document.getElementById('scorersSection'); if (sorted.length > 0) { sec.style.display = 'block'; document.getElementById('scorersList').innerHTML = `<table class="stats-table"><tr><th>Spiller</th><th>Mål</th></tr>${sorted.map(x => `<tr><td>${x[0]}</td><td><strong>${x[1]}</strong></td></tr>`).join('')}</table>`; }
         }
-        function exportCSV(idx) {
-            let db = JSON.parse(localStorage.getItem('fotballDB')); let m = db[idx]; 
-            let csv = "\uFEFFTid;Hendelse;Spiller;Lag\n" + m.events.map(e => `${e.time};${e.displayType};${e.player};${e.teamName}`).join('\n');
-            let b = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); let l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = `Kamp_${m.home}_${m.date}.csv`; l.click();
-        }
+
+        function exportCSV(idx) { let db = JSON.parse(localStorage.getItem('fotballDB')); let m = db[idx]; let csv = "\uFEFFTid;Hendelse;Spiller;Lag\n" + m.events.map(e => `${e.time};${e.displayType};${e.player};${e.teamName}`).join('\n'); let b = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); let l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = `Kamp_${m.home}_${m.date}.csv`; l.click(); }
+
         function shareMatchReport(idx) {
             let db = JSON.parse(localStorage.getItem('fotballDB')); let m = db[idx]; 
             let hc = getContrastYIQ(m.hColor), ac = getContrastYIQ(m.aColor), sc = m.events.filter(e => e.type === 'mål');
             let win = window.open('', '_blank');
-            win.document.write(`<html><body style="background:#222; color:#fff; font-family:sans-serif; text-align:center;"><div style="background:#111; width:500px; margin:50px auto; padding:30px; border-radius:15px; box-shadow:0 10px 30px #000;"><p style="font-size:0.8rem; color:#888;">${m.date} | ${m.type}</p><div style="display:flex; justify-content:space-around; align-items:center; margin:20px 0;"><div><div style="background:${m.hColor}; color:${hc}; padding:5px; border-radius:5px;">${m.home}</div><div style="font-size:80px; font-weight:bold;">${m.score.split('-')[0]}</div></div><div style="font-size:50px; color:#444;">-</div><div><div style="background:${m.aColor}; color:${ac}; padding:5px; border-radius:5px;">${m.away}</div><div style="font-size:80px; font-weight:bold;">${m.score.split('-')[1]}</div></div></div><div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; font-size:0.9rem;"><div style="display:flex;"><div style="flex:1;">${sc.filter(s=>s.teamCode==='home').map(s=>s.time+' '+s.player).join('<br>')||'Ingen mål'}</div><div style="flex:1; text-align:right;">${sc.filter(s=>s.teamCode==='away').map(s=>s.time+' '+s.player).join('<br>')||'Ingen mål'}</div></div></div></div><p style="color:#888;">Ta et skjermbilde for å dele!</p></body></html>`);
+            win.document.write(`<html><body style="background:#222; color:#fff; font-family:sans-serif; text-align:center;"><div style="background:#111; width:500px; margin:50px auto; padding:30px; border-radius:15px; box-shadow:0 10px 30px #000;"><p style="font-size:0.8rem; color:#888;">${m.date} | ${m.type}</p><div style="display:flex; justify-content:space-around; align-items:center; margin:20px 0;"><div><div style="background:${m.hColor}; color:${hc}; padding:5px; border-radius:5px;">${m.home}</div><div style="font-size:80px; font-weight:bold;">${m.score.split('-')[0]}</div></div><div style="font-size:50px; color:#444;">-</div><div><div style="background:${m.aColor}; color:${ac}; padding:5px; border-radius:5px;">${m.away}</div><div style="font-size:80px; font-weight:bold;">${m.score.split('-')[1]}</div></div></div><div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; font-size:0.9rem;"><div style="display:flex;"><div style="flex:1;">${sc.filter(s=>s.teamCode==='home').map(s=>s.time+' '+s.player).join('<br>')||'Ingen mål'}</div><div style="flex:1; text-align:right;">${sc.filter(s=>s.teamCode==='away').map(s=>s.time+' '+s.player).join('<br>')||'Ingen mål'}</div></div></div></div></body></html>`);
             win.document.close();
         }
+
         function clearDatabase() { if(confirm("Slette alt?")) { localStorage.removeItem('fotballDB'); location.reload(); } }
-        function closeModal() { document.getElementById('playerModal').style.display = 'none'; }
+        function undoLastEvent() { if (history.length > 0 && confirm("Angre siste?")) { let last = history.pop(); if (last.type === 'mål') { scores[last.teamCode]--; document.getElementById(last.teamCode + 'Score').innerText = scores[last.teamCode]; } renderLog(); saveState(); } }
+        function goToSetup() { document.getElementById('matchDisplay').style.display = 'none'; document.getElementById('setup').style.display = 'block'; }
     </script>
 </body>
 </html>
